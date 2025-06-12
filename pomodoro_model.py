@@ -1,6 +1,5 @@
 from __future__ import annotations
 import discord
-import discord.abc
 from discord.ext import commands
 from datetime import datetime, timedelta
 from typing import Type
@@ -18,7 +17,7 @@ Author =  discord.Member | discord.User
 class PomodoroHandler:
     def __init__(self, pomodoro: Type[Pomodoro], timer: Type[Timer]) -> None:
         self._timers: dict[Author, Pomodoro] = {}
-        self._user_channels: dict[Author, discord.abc.Messageable] = {}
+        self._user_context: dict[Author, Context] = {}
         self._pomodoro: Type[Pomodoro] = pomodoro
         self._timer: Type[Timer] = timer
 
@@ -28,13 +27,13 @@ class PomodoroHandler:
     def set_pomodoro(self, ctx: Context) -> None:
         author: Author = ctx.author
         self._timers[author] = Pomodoro(self._timer)
-        self._user_channels[author] = ctx.channel
+        self._user_context[author] = ctx
     
-    def check_time_is_up(self) -> list[discord.abc.Messageable]:
-        users: list[discord.abc.Messageable] = []
+    def check_time_is_up(self) -> list[Context]:
+        users: list[Context] = []
         for k in self._timers.keys():
             if self._timers[k].time_is_up:
-                users.append(self._user_channels[k])
+                users.append(self._user_context[k])
         return users
 
     def start(self, ctx: Context) -> None:
@@ -99,16 +98,9 @@ class Pomodoro:
     @property
     def time_left(self) -> str:
         if self._state == PomodoroState.STANDBY:
-            return "No pomodoro set"
+            return "No pomodoro set (type !start to proceed with your pomodoro)"
         else:
-            return  self._timer.time
-
-    @property
-    def time(self) -> str:
-        if self._state == PomodoroState.STANDBY:
-            return "No pomodoro set"
-        else:
-            return  self._timer.time
+            return  self._timer.time_left
 
     @property
     def time_is_up(self) -> bool:
@@ -121,18 +113,16 @@ class Pomodoro:
 
 class Timer:
     def __init__(self, mins: int) -> None:
-        self._time = datetime.now() + timedelta(minutes= mins)
+        now = datetime.now()
+        self._time = now + timedelta(minutes= mins)
     
     @property
     def time_left(self) -> str:
         time: timedelta = self._time - datetime.now()
-        return f"{time} left"
+        secs: int = time.seconds
+        return f"{secs//60} minutes and {secs%60} seconds left"
     
     @property
     def time_is_up(self) -> bool:
         return datetime.now() >= self._time
 
-    @property
-    def time(self) -> str:
-        return f"Pomodoro will alarm in {self._time.hour}:{self._time.minute}:{self._time.second}"
-    
