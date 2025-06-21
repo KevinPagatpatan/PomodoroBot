@@ -1,5 +1,5 @@
 
-# PomodoroBot
+# ![pomodoro bot icon](pomodoro_icon.png) PomodoroBot
 
 Pomodoro bot for Discord
 
